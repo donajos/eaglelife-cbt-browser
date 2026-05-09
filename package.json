@@ -2,7 +2,7 @@
   "name": "cbtexam",
   "version": "1.0.5",
   "description": "CBT Examination Desktop Client",
-  "main": "main.js",
+  "main": "./main/main.js",
   "author": "Oluwaseyi",
   "license": "MIT",
   "build": {
