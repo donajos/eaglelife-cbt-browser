@@ -1,0 +1,49 @@
+{
+  "name": "cbtexam",
+  "version": "1.0.5",
+  "description": "CBT Examination Desktop Client",
+  "main": "main.js",
+  "author": "Oluwaseyi",
+  "license": "MIT",
+  "build": {
+    "appId": "com.eaglelife.cbtexam",
+    "productName": "EagleLifeCBT Browser",
+    "directories": {
+      "output": "dist"
+    },
+    "publish": {
+    "provider": "generic",
+    "url": "http://localhost/updates/"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
+    }
+  },
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "package": "electron-builder",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^40.6.0",
+    "electron-builder": "^26.8.1"
+  },
+  "dependencies": {
+    "axios": "^1.13.6",
+    "electron-log": "^5.4.3",
+    "electron-store": "^11.0.2",
+    "electron-updater": "^6.8.3",
+    "semver": "^7.7.4"
+  }
+}

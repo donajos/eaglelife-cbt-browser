@@ -1,0 +1,36 @@
+# Node modules
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Build folders
+dist/
+build/
+out/
+release/
+
+# Electron packaged apps
+*.exe
+*.dmg
+*.AppImage
+
+# Environment files
+.env
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Cache
+.cache/
+
+*.exe
+*.zip
+*.rar
+*.7z
