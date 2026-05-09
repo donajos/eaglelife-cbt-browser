@@ -1,36 +1,28 @@
-# Node modules
+# dependencies
 node_modules/
 
-# Logs
-logs/
-*.log
-npm-debug.log*
-
-# Build folders
+# builds
 dist/
 build/
 out/
 release/
+.cache/
 
-# Electron packaged apps
+# electron-packager / electron-builder output
 *.exe
 *.dmg
 *.AppImage
+*.zip
 
-# Environment files
+# logs
+*.log
+
+# env files
 .env
 
-# VSCode
+# vscode
 .vscode/
 
-# OS files
+# OS junk
 .DS_Store
 Thumbs.db
-
-# Cache
-.cache/
-
-*.exe
-*.zip
-*.rar
-*.7z
