@@ -1,7 +1,9 @@
 const { BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
+const { preload } = require("../paths");
 
-async function showMessage(message) {
+
+function showMessage(message) {
     return new Promise((resolve) => {
 
         const parent = BrowserWindow.getFocusedWindow();
@@ -17,11 +19,11 @@ async function showMessage(message) {
             webPreferences: {
                 nodeIntegration: false,
                 contextIsolation: true,
-                preload: path.join(__dirname, "../../preload.js")
+                preload: path.join(__dirname, '..', '..', 'preload.js')
             }
         });
 
-        modal.loadFile("showModal.html");
+        modal.loadFile(path.join(__dirname, "..", "..", "renderer", "showModal.html"));
 
         modal.webContents.on("did-finish-load", () => {
             modal.webContents.send("show-message", message);

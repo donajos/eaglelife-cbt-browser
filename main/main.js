@@ -8,6 +8,7 @@ const { initUpdater } = require("./updater");
 const { initServerControl, stopServerControl } = require("./serverControl");
 
 
+
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
     app.quit();

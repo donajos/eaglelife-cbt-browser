@@ -5,5 +5,6 @@ const ROOT = path.join(__dirname, "..");
 
 module.exports = {
     ROOT,
-    PRELOAD: path.join(ROOT, "preload.js")
+    PRELOAD: path.join(ROOT, "preload.js"),
+    RENDERER: path.join(ROOT, "renderer")
 };

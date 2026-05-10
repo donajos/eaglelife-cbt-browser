@@ -4,6 +4,7 @@ const { autoUpdater } = require("electron-updater");
 const store = require("./services/storeServices");
 const log = require("electron-log");
 
+
 function initUpdater() {
     store.set('updateChecked', false);
     let serverIP = store.get('serverIP');
@@ -22,5 +23,6 @@ function initUpdater() {
     
             
 }
+
 
 module.exports = { initUpdater };

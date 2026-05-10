@@ -1,7 +1,7 @@
 const { BrowserWindow } = require('electron');
 const path = require('path');
 const store = require("./services/storeServices");
-const registerIPC = require("./ipc");
+//const registerIPC = require("./ipc");
 const { PRELOAD } = require("./paths");
 
 preload: PRELOAD
@@ -10,6 +10,11 @@ preload: PRELOAD
 let configWindow;
 let startWindow;
 let examWindow;
+
+function getConfigWindow() {
+
+    return configWindow;
+}
 
 function createConfigWindow() {
     configWindow = new BrowserWindow({
@@ -57,6 +62,10 @@ function createStartWindow() {
     });
     
     
+}
+
+function getStartWindow() {
+    return startWindow;
 }
 
 async function createExamWindow() {
@@ -203,7 +212,7 @@ async function reconnectLoop() {
     }
 }
 
-function showMessage(message) {
+/* function showMessage(message) {
     return new Promise((resolve) => {
 
         const parent = BrowserWindow.getFocusedWindow(); 
@@ -235,7 +244,7 @@ function showMessage(message) {
             resolve();
         });
     });
-}
+} */
 
 function focusExamWindow() {
 
@@ -250,6 +259,8 @@ function focusExamWindow() {
 }
 
 
+
+
 function initWindows() {
     createConfigWindow();
 }
@@ -258,5 +269,8 @@ module.exports = {
     initWindows,
     createStartWindow,
     createExamWindow,
-    focusExamWindow
+    focusExamWindow,
+    getConfigWindow,
+    getStartWindow,
+    //showMessage
 };

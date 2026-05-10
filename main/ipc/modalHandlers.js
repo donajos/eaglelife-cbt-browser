@@ -14,4 +14,4 @@ function registerModalHandlers() {
     });
 }
 
-module.exports = registerModalHandlers;
+module.exports = {registerModalHandlers};
