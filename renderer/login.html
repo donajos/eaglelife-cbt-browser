@@ -60,6 +60,7 @@
             cursor: pointer;
             margin-bottom: 15px;
             transition: 0.3s;
+            
         }
 
         .btn-primary {
@@ -71,6 +72,10 @@
             background: #f2f2f2;
             transform: scale(1.02);
         }
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 159, 229, 0.5);
+        }
     </style>
 </head>
 
@@ -80,7 +85,7 @@
         <h1>Welcome to EAGLE LIFE Exam Portal</h1>
         <p>Click below to begin your examination.</p>
 
-        <button id="startBtn" class="btn btn-primary">Proceed to Exam Login >></button>
+        <button id="startBtn" class="btn btn-primary" autofocus>Proceed to Exam Login >></button>
     </div>
 
     <!-- KEEP YOUR JS CONNECTION -->

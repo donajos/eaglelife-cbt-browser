@@ -48,6 +48,10 @@
 #globalModalOk:hover {
   background: #0056b3;
 }
+#globalModalOk:focus{
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 159, 229, 0.5);
+}
 
 /* .hidden {
   display: none;
@@ -60,7 +64,7 @@
 <!--<div id="modal">-->
     <div class="modal-box">
        <p id="globalModalMessage"></p>
-       <button id="globalModalOk">OK</button>
+       <button id="globalModalOk" autofocus>OK</button>
     </div>
   
 <!--</div>-->
