@@ -1,12 +1,31 @@
+//network.js
 const axios = require("axios");
+const store = require("./services/storeServices");
+let reconnectTimer = null;
 
-let serverIP;
-
-function initNetwork(ip) {
-    serverIP = ip;
+function initNetwork(){
+    serverIP = store.get('serverIP');
+    return serverIP;
 }
 
+function safeSend(channel, examWindow, data = null) {
+    try {
+        if (
+            examWindow &&
+            !examWindow.isDestroyed() &&
+            examWindow.webContents &&
+            !examWindow.webContents.isDestroyed()
+        ) {
+            examWindow.webContents.send(channel, data);
+        }
+    } catch (err) {
+        console.log("safeSend skipped:", err.message);
+    }
+}
+
+
 async function checkServer(host) {
+    initNetwork();
     try {
         const response = await fetch(`http://${host}/cbtexam/`, {
             method: 'HEAD'
@@ -18,7 +37,9 @@ async function checkServer(host) {
     }
 }
 
-async function reconnectLoop() {
+
+async function reconnectLoop(examWindow, serverReachable, lastExamURL, reconnecting) {
+    initNetwork();
 
     if (!examWindow || examWindow.isDestroyed()) return;
     if (reconnecting) return;
@@ -30,7 +51,7 @@ async function reconnectLoop() {
 
         if (!serverReachable) {
             serverReachable = true;
-            safeSend('network-online');
+            safeSend('network-online', examWindow);
         }
 
         // Reload only if current page is blank/error
@@ -42,17 +63,22 @@ async function reconnectLoop() {
 
     } catch {
         serverReachable = false;
-        safeSend('network-offline');
+        safeSend('network-offline', examWindow);
 
     } finally {
         reconnecting = false;
 
-        reconnectTimer = setTimeout(reconnectLoop, 2000);
+        reconnectTimer = setTimeout(() => {
+                                reconnectLoop(examWindow, serverReachable, lastExamURL);
+                                }, 20000);
     }
 }
+
+
 
 module.exports = {
     initNetwork,
     checkServer,
-    reconnectLoop
+    reconnectLoop,
+    safeSend
 };

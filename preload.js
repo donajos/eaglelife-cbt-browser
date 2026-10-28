@@ -40,6 +40,9 @@ function removeNavigationOverlay() {
   const overlay = document.getElementById("nav-overlay");
   if (overlay) overlay.remove();
 }
+// Only activate overlay logic in the exam window
+// Add a meta tag to exam.html: <meta name="window-role" content="exam">
+const isExamWindow = !!document.querySelector('meta[name="window-role"][content="exam"]');
 
 ipcRenderer.on("network-offline", () => {
   createNavigationOverlay();

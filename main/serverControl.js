@@ -1,6 +1,8 @@
 const axios = require("axios");
 let interval;
 let serverCommandInterval = null;
+const { getExamWindow } = require("./kiosk");
+let examWindow = getExamWindow();
 
 function checkServerCommands() {
 

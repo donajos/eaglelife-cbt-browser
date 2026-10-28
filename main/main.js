@@ -1,7 +1,7 @@
-
+//main.js
 const { app } = require("electron");
-const { initWindows, focusExamWindow  } = require("./windows");
-const { initKiosk } = require("./kiosk");
+const { initWindows  } = require("./windows");
+const { initKiosk, focusExamWindow  } = require("./kiosk");
 const registerIPC = require("./ipc");
 const { initNetwork } = require("./network");
 const { initUpdater } = require("./updater");
@@ -33,5 +33,13 @@ if (!gotLock) {
     app.on('window-all-closed', () => {
         stopServerControl();
         if (process.platform !== 'darwin') app.quit();
+    });
+
+    process.on('uncaughtException', (err) => {
+        console.error('UNCAUGHT EXCEPTION:', err);
+    });
+
+    process.on('unhandledRejection', (reason) => {
+        console.error('UNHANDLED REJECTION:', reason);
     });
 }
