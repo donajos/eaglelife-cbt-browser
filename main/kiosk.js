@@ -2,34 +2,35 @@
 
 const { BrowserWindow, app } = require('electron');
 const path = require('path');
-const { PRELOAD } = require("./paths");
 const { checkServer, reconnectLoop, initNetwork, safeSend } = require("./network");
 const store = require("./services/storeServices");
-const { autoUpdater } = require("electron-updater");
-let kioskMode = true; // default to kiosk mode, can be toggled
+const { startKeyboardHook } = require("./services/keyboardHook");
+
+let autoUpdater = null;
+if (process.versions && process.versions.electron) {
+    ({ autoUpdater } = require("electron-updater"));
+}
+
+let kioskMode = true;
 let examWindow;
-let serverReachable;
-let lastExamURL; // track last navigated URL for reloads
-preload: PRELOAD
-let serverIP = initNetwork();
-
-
-
+let serverReachable = false;
+let lastExamURL = null;
+let reconnecting = false;
 
 function kiosksMode() {
-    
+    const serverIP = initNetwork();
 
     examWindow = new BrowserWindow({
         kiosk: true,
         fullscreen: true,
         minimizable: false,
-        maximizable: true, // allow maximize for better multi-monitor support
+        maximizable: true,
         frame: false,
         resizable: false,
         autoHideMenuBar: true,
         center: true,
         alwaysOnTop: true,
-        skipTaskbar: false, // Windows/Linux
+        skipTaskbar: true,
         focusable: true,
         webPreferences: {
             nodeIntegration: false,
@@ -42,21 +43,16 @@ function kiosksMode() {
     examWindow.on('minimize', (e) => {
         e.preventDefault();
     });
-    
 
-    // Prevent new windows and context menu
     examWindow.webContents.setWindowOpenHandler(({ url }) => {
-        // Only allow the server hostname
         try {
             return (new URL(url).hostname === serverIP) ? { action: 'allow' } : { action: 'deny' };
         } catch {
-            return { action: 'deny' }; // blocks everything else
+            return { action: 'deny' };
         }
-        
     });
     examWindow.webContents.on('context-menu', e => e.preventDefault());
 
-    // Block dangerous keyboard shortcuts
     examWindow.webContents.on('before-input-event', (event, input) => {
         if (
             input.key === 'F12' ||
@@ -65,18 +61,16 @@ function kiosksMode() {
             (input.control && input.key.toLowerCase() === 'w') ||
             (input.alt && input.key === 'F4') ||
             (input.meta && input.key.toLowerCase() === 'q') ||
-            (input.control && input.meta && input.key.toLowerCase === 'd' ) ||
-            (input.meta && input.key.toLowerCase() === 'd' ) ||
+            (input.control && input.meta && input.key.toLowerCase() === 'd') ||
+            (input.meta && input.key.toLowerCase() === 'd') ||
             input.meta
         ) {
             event.preventDefault();
         }
     });
-
 }
 
 function noKiosksMode() {
-
     examWindow = new BrowserWindow({
         width: 1200,
         height: 800,
@@ -86,7 +80,7 @@ function noKiosksMode() {
         maximizable: true,
         minimizable: true,
         fullscreen: false,
-        frame: true,   //  Native OS controls
+        frame: true,
         autoHideMenuBar: false,
         center: true,
         webPreferences: {
@@ -98,28 +92,36 @@ function noKiosksMode() {
 }
 
 function focusExamWindow() {
-
     if (examWindow) {
-
         if (examWindow.isMinimized()) {
             examWindow.restore();
         }
-
         examWindow.focus();
     }
 }
-let reconnecting = false;
-async function createExamWindow() { 
 
-    if (!kiosksMode){
-        return noKiosksMode();
-    }else {     
-        kiosksMode();
+async function createExamWindow() {
+    if (examWindow && !examWindow.isDestroyed()) {
+        return;
     }
+
+    const serverIP = initNetwork();
+
+    if (!serverIP) {
+        return;
+    }
+
+    if (!kioskMode) {
+        noKiosksMode();
+        return;
+    }
+
+    await startKeyboardHook();
+    kiosksMode();
+
     const examURL = `http://${serverIP}/cbtexam/my/`;
     lastExamURL = lastExamURL || examURL;
 
-    // loading url with error handling to update serverReachable state
     const safeLoadURL = async (url) => {
         try {
             await examWindow.loadURL(url);
@@ -128,23 +130,17 @@ async function createExamWindow() {
         }
     };
 
-    // Try initial load
     try {
         await checkServer(serverIP);
         serverReachable = true;
         await safeLoadURL(lastExamURL);
         safeSend('network-online', examWindow);
-            
-        
     } catch {
         serverReachable = false;
-        // Keep lastExamURL; overlay shows offline
         safeSend('network-offline', examWindow);
-        
-        await safeLoadURL(lastExamURL); // attempt load, ignore errors
+        await safeLoadURL(lastExamURL);
     }
 
-    // Track last navigated URL
     examWindow.webContents.on('did-navigate', (event, url, isMainFrame) => {
         if (isMainFrame) lastExamURL = url;
     });
@@ -152,7 +148,6 @@ async function createExamWindow() {
         lastExamURL = url;
     });
 
-    // Block navigation to external URLs
     const blockExternal = (event, url) => {
         try {
             const hostname = new URL(url).hostname;
@@ -164,71 +159,64 @@ async function createExamWindow() {
             event.preventDefault();
         }
     };
-    // Block redirects to external sites
+
     examWindow.webContents.on('will-redirect', blockExternal);
     examWindow.webContents.on('will-navigate', blockExternal);
 
-    // Handle failed page loads
     examWindow.webContents.on('did-fail-load', (event, errorCode, errorDesc, validatedURL, isMainFrame) => {
         console.error(`Failed to load ${validatedURL}: ${errorCode} ${errorDesc}`);
-        if (!isMainFrame || errorCode === -3) return; // ignore aborted
+        if (!isMainFrame || errorCode === -3) return;
         serverReachable = false;
         lastExamURL = validatedURL;
         safeSend('network-offline', examWindow);
     });
 
-    // Retry loop every 2s with reconnection flag to prevent overlaps
-    reconnectLoop(examWindow, serverReachable, lastExamURL, reconnecting);
+    reconnectLoop(examWindow, serverReachable, lastExamURL);
 
-    // Auto-focus exam window with debounce to prevent focus loops
     let lastFocusTime = 0;
     examWindow.on('blur', () => {
         const now = Date.now();
         if (now - lastFocusTime > 100) {
             lastFocusTime = now;
-            if (examWindow && !examWindow.isDestroyed()){
+            if (examWindow && !examWindow.isDestroyed()) {
                 examWindow.show();
                 examWindow.focus();
                 examWindow.setAlwaysOnTop(true);
-            } 
+            }
         }
     });
     examWindow.on('ready-to-show', () => {
         examWindow.show();
         examWindow.focus();
     });
-    
 
-     // Handle window close
     examWindow.on('closed', () => {
         reconnecting = false;
         examWindow = null;
 
-        // Auto-reopen only if not during quit or update
         if (!app.isQuitting) {
             setTimeout(() => {
                 if (!examWindow) createExamWindow();
             }, 1000);
         }
 
-        if (store.get('pendingUpdate')) {
+        if (store.get('pendingUpdate') && autoUpdater) {
             autoUpdater.quitAndInstall();
         }
     });
 }
-function getExamWindow(){
 
+function getExamWindow() {
     return examWindow;
 }
 
-function  initKiosk(windowRef) {
+function initKiosk(windowRef) {
     examWindow = windowRef;
 }
 
-
-module.exports = { 
+module.exports = {
     initKiosk,
     createExamWindow,
     focusExamWindow,
-    getExamWindow 
+    getExamWindow
 };

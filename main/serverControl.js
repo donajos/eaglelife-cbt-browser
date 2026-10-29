@@ -1,39 +1,37 @@
 const axios = require("axios");
+const { app } = require("electron");
+const store = require("./services/storeServices");
+const { getExamWindow } = require("./kiosk");
+
 let interval;
 let serverCommandInterval = null;
-const { getExamWindow } = require("./kiosk");
-let examWindow = getExamWindow();
+let kioskMode = true;
+let appLock = false;
 
 function checkServerCommands() {
-
-    if (serverCommandInterval) return; // already running
+    if (serverCommandInterval) return;
 
     serverCommandInterval = setInterval(async () => {
-        // skip check if examWindow is open
+        const examWindow = getExamWindow();
+
         if (examWindow && !examWindow.isDestroyed()) return;
+
+        const serverIP = store.get('serverIP');
+        if (!serverIP) return;
 
         try {
             const res = await axios.get(`http://${serverIP}/updates/api/system-status.php`);
 
-            if (res.data.examActive) {
-                kioskMode = true;
-            } else {
-                kioskMode = false;
-            }
-            if (res.data.lockClient) {
-                appLock = true;
-            } else {
-                appLock = false;
-            }
-            if(res.data.shutdown){
+            kioskMode = !!res.data.examActive;
+            appLock = !!res.data.lockClient;
+
+            if (res.data.shutdown) {
                 app.quit();
             }
-
-
         } catch (err) {
             console.log("Failed to check server version:", err.message);
         }
-    }, 60000); // every 60 seconds
+    }, 60000);
 }
 
 function stopServerControl() {
@@ -42,7 +40,6 @@ function stopServerControl() {
         serverCommandInterval = null;
     }
 }
-
 
 function initServerControl() {
     checkServerCommands();

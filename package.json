@@ -1,6 +1,6 @@
 {
   "name": "cbtexam",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "CBT Examination Desktop Client",
   "main": "./main/main.js",
   "author": "Oluwaseyi",
@@ -19,6 +19,12 @@
       "target": "nsis",
       "icon": "assets/icon.ico"
     },
+    "extraResources": [
+      {
+        "from": "native/keyboard-hook.ps1",
+        "to": "keyboard-hook.ps1"
+      }
+    ],
     "nsis": {
       "oneClick": false,
       "perMachine": false,

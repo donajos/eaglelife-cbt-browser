@@ -14,6 +14,9 @@ if (!gotLock) {
     app.quit();
 
 } else {
+    app.on('before-quit', () => {
+        app.isQuitting = true;
+    });
 
     app.on("second-instance", () => {
         focusExamWindow();

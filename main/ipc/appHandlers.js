@@ -1,13 +1,14 @@
 const { app, ipcMain } = require('electron');
-const { autoUpdater } = require("electron-updater");
-const currentVersion = app.getVersion();
 
-function registerAppHandlers(){
+let currentVersion = '';
+if (app && typeof app.getVersion === 'function') {
+    currentVersion = app.getVersion();
+}
 
+function registerAppHandlers() {
     ipcMain.handle('get-version', () => {
-    return currentVersion;
-});
-
+        return currentVersion;
+    });
 }
 
 module.exports = registerAppHandlers;

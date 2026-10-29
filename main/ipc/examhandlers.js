@@ -2,49 +2,52 @@
 
 const { ipcMain } = require("electron");
 const path = require("path");
-const {createStartWindow, getStartWindow } = require("../windows");
-let serverIP = require("../services/storeServices").get('serverIP');
+const store = require("../services/storeServices");
+const { getStartWindow } = require("../windows");
 const { showMessage } = require("../services/modalService");
-const { autoUpdater } = require("electron-updater");
 const { createExamWindow, getExamWindow } = require("../kiosk");
 const { checkServer } = require("../network");
+
+let autoUpdater = null;
+if (process.versions && process.versions.electron) {
+    ({ autoUpdater } = require("electron-updater"));
+}
+
 let startWindow;
-let examWindow = getExamWindow();
 
-function registerExamHandlers(){
-
+function registerExamHandlers() {
     ipcMain.on('start', () => {
-   
-        // Instead of a new window, just load the next file in the SAME window
         startWindow = getStartWindow();
         if (startWindow) {
             startWindow.loadFile(path.join(__dirname, "..", "..", "renderer", "login.html"));
         }
-    
     });
 
     ipcMain.handle('exam-login', async () => {
-       startWindow = getStartWindow();
+        startWindow = getStartWindow();
         if (!startWindow) return { success: false };
 
-        try {
-            if (!examWindow) {
-                await autoUpdater.checkForUpdates();
-            }       
-            // Check if server is reachable
-            await checkServer(serverIP);
+        const serverIP = store.get('serverIP');
 
-            // Close the start window and open the exam window
-            
-            createExamWindow();
-            startWindow.close();
-            return { success: true };
-        } catch  {
-            
+        try {
+            if (!getExamWindow()) {
+                await autoUpdater.checkForUpdates();
+            }
+            await checkServer(serverIP);
+        } catch {
             await showMessage(`cannot reach server${serverIP ? ` at ${serverIP}` : ''}`);
             return { success: false };
         }
-    }); 
+
+        try {
+            await createExamWindow();
+            startWindow.close();
+            return { success: true };
+        } catch (error) {
+            await showMessage(`Unable to start kiosk mode: ${error.message}`);
+            return { success: false };
+        }
+    });
 }
 
 module.exports = registerExamHandlers;

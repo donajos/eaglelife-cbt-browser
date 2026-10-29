@@ -2,8 +2,10 @@
 const axios = require("axios");
 const store = require("./services/storeServices");
 let reconnectTimer = null;
+let serverIP = null;
+let reconnecting = false;
 
-function initNetwork(){
+function initNetwork() {
     serverIP = store.get('serverIP');
     return serverIP;
 }
@@ -25,9 +27,14 @@ function safeSend(channel, examWindow, data = null) {
 
 
 async function checkServer(host) {
-    initNetwork();
+    const targetHost = host || initNetwork();
+
+    if (!targetHost) {
+        throw new Error('Server IP is not configured');
+    }
+
     try {
-        const response = await fetch(`http://${host}/cbtexam/`, {
+        const response = await fetch(`http://${targetHost}/cbtexam/`, {
             method: 'HEAD'
         });
 
@@ -38,27 +45,28 @@ async function checkServer(host) {
 }
 
 
-async function reconnectLoop(examWindow, serverReachable, lastExamURL, reconnecting) {
-    initNetwork();
+async function reconnectLoop(examWindow, serverReachable, lastExamURL) {
+    const currentHost = initNetwork();
 
-    if (!examWindow || examWindow.isDestroyed()) return;
+    if (!examWindow || examWindow.isDestroyed() || !currentHost) return;
     if (reconnecting) return;
 
     reconnecting = true;
 
     try {
-        await checkServer(serverIP);
+        await checkServer(currentHost);
 
         if (!serverReachable) {
             serverReachable = true;
             safeSend('network-online', examWindow);
         }
 
-        // Reload only if current page is blank/error
         const currentURL = examWindow.webContents.getURL();
 
         if (!currentURL || currentURL.startsWith('chrome-error://') || currentURL === 'about:blank') {
-            await safeLoadURL(lastExamURL);
+            if (lastExamURL) {
+                await examWindow.loadURL(lastExamURL).catch(() => {});
+            }
         }
 
     } catch {
@@ -69,8 +77,8 @@ async function reconnectLoop(examWindow, serverReachable, lastExamURL, reconnect
         reconnecting = false;
 
         reconnectTimer = setTimeout(() => {
-                                reconnectLoop(examWindow, serverReachable, lastExamURL);
-                                }, 20000);
+            reconnectLoop(examWindow, serverReachable, lastExamURL);
+        }, 20000);
     }
 }
 
