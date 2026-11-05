@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-start;
+    }
+
+    #battery-status {
+      width: 148px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 0 11px;
+      color: #f8fafc;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    #battery-icon {
+      width: 25px;
+      height: 16px;
+      flex: 0 0 auto;
+      color: #4ade80;
+    }
+
+    #battery-level {
+      fill: currentColor;
+    }
+
+    #battery-bolt {
+      display: none;
+      fill: #0f172a;
+    }
+
+    #battery-copy {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+
+    #percentage {
+      font-size: 13px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #state {
+      margin-top: 2px;
+      color: #cbd5e1;
+      font-size: 10px;
+    }
+
+    #battery-status.low #battery-icon {
+      color: #f87171;
+    }
+
+    #battery-status.medium #battery-icon {
+      color: #fbbf24;
+    }
+
+    #battery-status.unavailable #battery-icon {
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div id="battery-status" class="unavailable" role="status" aria-live="polite">
+    <svg id="battery-icon" viewBox="0 0 30 18" aria-hidden="true">
+      <rect x="1" y="2" width="24" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <rect x="3.5" y="4.5" width="0" height="9" rx="1" id="battery-level"></rect>
+      <rect x="26.5" y="6" width="3" height="6" rx="1" fill="currentColor"></rect>
+      <path id="battery-bolt" d="M15 4 10 10h3l-1 4 5-6h-3z"></path>
+    </svg>
+    <div id="battery-copy">
+      <span id="percentage">--%</span>
+      <span id="state">Checking battery</span>
+    </div>
+  </div>
+  <script>
+    const statusElement = document.getElementById("battery-status");
+    const levelElement = document.getElementById("battery-level");
+    const boltElement = document.getElementById("battery-bolt");
+    const percentageElement = document.getElementById("percentage");
+    const stateElement = document.getElementById("state");
+
+    function showUnavailable(error) {
+      if (error) console.error("Unable to read battery status:", error);
+      statusElement.className = "unavailable";
+      statusElement.title = "Battery status is unavailable on this device";
+      percentageElement.textContent = "--%";
+      stateElement.textContent = "Unavailable";
+      levelElement.setAttribute("width", "0");
+      boltElement.style.display = "none";
+    }
+
+    function updateBattery(battery) {
+      const percent = Math.round(battery.level * 100);
+      statusElement.className = percent <= 15 ? "low" : percent <= 30 ? "medium" : "";
+      statusElement.title = `${percent}%${battery.charging ? " - Charging" : " - On battery"}`;
+      percentageElement.textContent = `${percent}%`;
+      stateElement.textContent = battery.charging ? "Charging" : "On battery";
+      levelElement.setAttribute("width", String(Math.max(0, Math.min(19, percent * 0.19))));
+      boltElement.style.display = battery.charging ? "block" : "none";
+    }
+
+    if (navigator.getBattery) {
+      navigator.getBattery().then((battery) => {
+        updateBattery(battery);
+        battery.addEventListener("levelchange", () => updateBattery(battery));
+        battery.addEventListener("chargingchange", () => updateBattery(battery));
+      }).catch(showUnavailable);
+    } else {
+      showUnavailable();
+    }
+  </script>
+</body>
+</html>

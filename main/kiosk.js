@@ -13,9 +13,61 @@ if (process.versions && process.versions.electron) {
 
 let kioskMode = true;
 let examWindow;
+let batteryStatusWindow;
 let serverReachable = false;
 let lastExamURL = null;
 let reconnecting = false;
+
+function positionBatteryStatusWindow() {
+    if (!examWindow || examWindow.isDestroyed() || !batteryStatusWindow || batteryStatusWindow.isDestroyed()) {
+        return;
+    }
+
+    const bounds = examWindow.getBounds();
+    const width = 156;
+    const height = 42;
+    batteryStatusWindow.setBounds({
+        x: bounds.x + bounds.width - width - 16,
+        y: bounds.y + 12,
+        width,
+        height
+    });
+}
+
+function createBatteryStatusWindow() {
+    const statusWindow = new BrowserWindow({
+        parent: examWindow,
+        width: 156,
+        height: 42,
+        frame: false,
+        transparent: true,
+        resizable: false,
+        minimizable: false,
+        maximizable: false,
+        focusable: false,
+        skipTaskbar: true,
+        alwaysOnTop: true,
+        hasShadow: false,
+        show: false,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            devTools: false
+        }
+    });
+    batteryStatusWindow = statusWindow;
+    statusWindow.setIgnoreMouseEvents(true);
+    statusWindow.loadFile(path.join(__dirname, '..', 'renderer', 'battery-status.html'))
+        .catch(error => console.error('Unable to load battery status window:', error));
+    statusWindow.once('ready-to-show', () => {
+        if (statusWindow.isDestroyed()) return;
+        positionBatteryStatusWindow();
+        statusWindow.showInactive();
+    });
+
+    examWindow.on('move', positionBatteryStatusWindow);
+    examWindow.on('resize', positionBatteryStatusWindow);
+}
 
 function kiosksMode() {
     const serverIP = initNetwork();
@@ -92,11 +144,19 @@ function noKiosksMode() {
 }
 
 function focusExamWindow() {
-    if (examWindow) {
+    if (examWindow && !examWindow.isDestroyed()) {
         if (examWindow.isMinimized()) {
             examWindow.restore();
         }
+        examWindow.setKiosk(true);
+        examWindow.setFullScreen(true);
+        examWindow.setAlwaysOnTop(true);
+        examWindow.show();
         examWindow.focus();
+        if (batteryStatusWindow && !batteryStatusWindow.isDestroyed()) {
+            positionBatteryStatusWindow();
+            batteryStatusWindow.showInactive();
+        }
     }
 }
 
@@ -118,6 +178,7 @@ async function createExamWindow() {
 
     await startKeyboardHook();
     kiosksMode();
+    createBatteryStatusWindow();
 
     const examURL = `http://${serverIP}/cbtexam/my/`;
     lastExamURL = lastExamURL || examURL;
@@ -178,29 +239,28 @@ async function createExamWindow() {
         const now = Date.now();
         if (now - lastFocusTime > 100) {
             lastFocusTime = now;
-            if (examWindow && !examWindow.isDestroyed()) {
-                examWindow.show();
-                examWindow.focus();
-                examWindow.setAlwaysOnTop(true);
-            }
+            focusExamWindow();
         }
     });
     examWindow.on('ready-to-show', () => {
-        examWindow.show();
-        examWindow.focus();
+        focusExamWindow();
     });
 
     examWindow.on('closed', () => {
         reconnecting = false;
         examWindow = null;
+        batteryStatusWindow = null;
 
-        if (!app.isQuitting) {
+        const installPendingUpdate = store.get('pendingUpdate') && autoUpdater;
+
+        if (!app.isQuitting && !installPendingUpdate) {
             setTimeout(() => {
-                if (!examWindow) createExamWindow();
+                if (!app.isQuitting && !examWindow) createExamWindow();
             }, 1000);
         }
 
-        if (store.get('pendingUpdate') && autoUpdater) {
+        if (installPendingUpdate) {
+            store.set('pendingUpdate', false);
             autoUpdater.quitAndInstall();
         }
     });

@@ -4,7 +4,7 @@ const electron = require('electron');
 
 const app = electron.app;
 const dialog = electron.dialog;
-const STARTUP_TIMEOUT_MS = 10000;
+const STARTUP_TIMEOUT_MS = 15000;
 const STOP_TIMEOUT_MS = 2000;
 
 let hookProcess = null;
@@ -78,7 +78,7 @@ function startKeyboardHook() {
         };
 
         const startupTimer = setTimeout(() => {
-            failStartup(new Error('The keyboard hook did not start within 10 seconds.'));
+            failStartup(new Error('The keyboard hook did not start within 15 seconds.'));
         }, STARTUP_TIMEOUT_MS);
 
         child.stdout.setEncoding('utf8');

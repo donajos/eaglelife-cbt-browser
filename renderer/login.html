@@ -72,9 +72,18 @@
             background: #f2f2f2;
             transform: scale(1.02);
         }
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: none;
+        }
         .btn:focus {
             outline: none;
             box-shadow: 0 0 0 3px rgba(0, 159, 229, 0.5);
+        }
+        .btn:disabled {
+            cursor: wait;
+            opacity: 0.7;
         }
     </style>
 </head>
@@ -86,11 +95,15 @@
         <p>Click below to begin your examination.</p>
 
         <button id="startBtn" class="btn btn-primary" autofocus>Proceed to Exam Login >></button>
+        <button id="updateBtn" class="btn btn-secondary" type="button">Check for updates</button>
+        <p id="updateStatus" role="status" aria-live="polite"></p>
     </div>
 
     <!-- KEEP YOUR JS CONNECTION -->
 <script>
 const btn = document.getElementById('startBtn');
+const updateBtn = document.getElementById('updateBtn');
+const updateStatus = document.getElementById('updateStatus');
 
 btn.addEventListener('click', async() => {
     btn.innerText = "Connecting...";
@@ -104,6 +117,33 @@ btn.addEventListener('click', async() => {
             btn.disabled = false;
         }
    
+});
+updateBtn.addEventListener('click', async () => {
+   updateBtn.disabled = true;
+   updateBtn.innerText = "Checking for updates...";
+   updateStatus.innerText = "";
+
+   try {
+       const result = await window.electronAPI.openUpdateLink();
+
+       if (!result.success) {
+           updateStatus.innerText = result.error || "Unable to check for updates.";
+           return;
+       }
+
+       if (result.updateAvailable === true) {
+           updateStatus.innerText = "An update is available. It will download and restart the app to install.";
+       } else if (result.updateAvailable === false) {
+           updateStatus.innerText = "You are up to date.";
+       } else {
+           updateStatus.innerText = "An update check is already in progress.";
+       }
+   } catch (error) {
+       updateStatus.innerText = error.message || "Unable to check for updates.";
+   } finally {
+       updateBtn.disabled = false;
+       updateBtn.innerText = "Check for updates";
+   }
 });
 </script>
 

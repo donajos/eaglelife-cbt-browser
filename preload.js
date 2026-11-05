@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getIP: () => ipcRenderer.invoke('get-ip'),
     startPage: () => ipcRenderer.send('start'),
     examLogin: () => ipcRenderer.invoke('exam-login'),
+    openUpdateLink: () => ipcRenderer.invoke('open-update-link'),
     showMessage: (message) => ipcRenderer.send('show-message', message),
     onShowMessage: (callback) =>
         ipcRenderer.on('show-message', (event, message) => callback(message)),

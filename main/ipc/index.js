@@ -1,10 +1,11 @@
-const { ipcMain } = require('electron');
+
 
 const registerConfigHandlers = require("./configHandlers");
 const registerExamHandlers = require("./examHandlers");
 const registerAppHandlers = require("./appHandlers");
 const {registerModalHandlers} = require("./modalHandlers");
-const { openStart, openExam } = require('../controllers/windowController');
+const RegisterUpdateLink = require("./updateLink");
+
 
 
 function registerIPC() {
@@ -12,6 +13,7 @@ function registerIPC() {
     registerExamHandlers();
     registerAppHandlers();
     registerModalHandlers();
+    RegisterUpdateLink();
 }
 
 module.exports = registerIPC;
