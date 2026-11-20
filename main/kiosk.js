@@ -75,6 +75,7 @@ function kiosksMode() {
     examWindow = new BrowserWindow({
         kiosk: true,
         fullscreen: true,
+        show: false,
         minimizable: false,
         maximizable: true,
         frame: false,
@@ -91,9 +92,18 @@ function kiosksMode() {
             devTools: false
         }
     });
-    examWindow.setKiosk(true);
     examWindow.on('minimize', (e) => {
         e.preventDefault();
+    });
+    examWindow.once('ready-to-show', () => {
+        if (examWindow && !examWindow.isDestroyed()) {
+            examWindow.show();
+            examWindow.focus();
+            if (batteryStatusWindow && !batteryStatusWindow.isDestroyed()) {
+                positionBatteryStatusWindow();
+                batteryStatusWindow.showInactive();
+            }
+        }
     });
 
     examWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -148,10 +158,6 @@ function focusExamWindow() {
         if (examWindow.isMinimized()) {
             examWindow.restore();
         }
-        examWindow.setKiosk(true);
-        examWindow.setFullScreen(true);
-        examWindow.setAlwaysOnTop(true);
-        examWindow.show();
         examWindow.focus();
         if (batteryStatusWindow && !batteryStatusWindow.isDestroyed()) {
             positionBatteryStatusWindow();
@@ -180,7 +186,7 @@ async function createExamWindow() {
     kiosksMode();
     createBatteryStatusWindow();
 
-    const examURL = `http://${serverIP}/cbtexam/my/`;
+    const examURL = `http://${serverIP}/cbtexam/login/index.php`;
     lastExamURL = lastExamURL || examURL;
 
     const safeLoadURL = async (url) => {
@@ -239,13 +245,13 @@ async function createExamWindow() {
         const now = Date.now();
         if (now - lastFocusTime > 100) {
             lastFocusTime = now;
-            focusExamWindow();
+            if (examWindow && !examWindow.isDestroyed()) {
+                examWindow.show();
+                examWindow.focus();
+                examWindow.setAlwaysOnTop(true);
+            }
         }
     });
-    examWindow.on('ready-to-show', () => {
-        focusExamWindow();
-    });
-
     examWindow.on('closed', () => {
         reconnecting = false;
         examWindow = null;
