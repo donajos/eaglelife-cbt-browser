@@ -1,6 +1,6 @@
 //kiosk.js
 
-const { BrowserWindow, app } = require('electron');
+const { BrowserWindow, app, screen } = require('electron');
 const path = require('path');
 const { checkServer, reconnectLoop, initNetwork, safeSend } = require("./network");
 const store = require("./services/storeServices");
@@ -24,11 +24,11 @@ function positionBatteryStatusWindow() {
         return;
     }
 
-    const bounds = examWindow.getBounds();
+    const bounds = screen.getDisplayMatching(examWindow.getBounds()).bounds;
     const width = 156;
     const height = 42;
     batteryStatusWindow.setBounds({
-        x: bounds.x + bounds.width - width - 16,
+        x: bounds.x + Math.round((bounds.width - width) / 2),
         y: bounds.y + 12,
         width,
         height
