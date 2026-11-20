@@ -23,6 +23,10 @@
       {
         "from": "native/keyboard-hook.ps1",
         "to": "keyboard-hook.ps1"
+      },
+      {
+        "from": "native/taskbar.ps1",
+        "to": "taskbar.ps1"
       }
     ],
     "nsis": {

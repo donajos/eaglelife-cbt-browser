@@ -5,6 +5,7 @@ const path = require('path');
 const { checkServer, reconnectLoop, initNetwork, safeSend } = require("./network");
 const store = require("./services/storeServices");
 const { startKeyboardHook } = require("./services/keyboardHook");
+const { hideTaskbar } = require("./services/taskbar");
 
 let autoUpdater = null;
 if (process.versions && process.versions.electron) {
@@ -183,6 +184,7 @@ async function createExamWindow() {
     }
 
     await startKeyboardHook();
+    hideTaskbar();
     kiosksMode();
     createBatteryStatusWindow();
 
